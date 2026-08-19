@@ -1,0 +1,38 @@
+name: Step 0 - Start walkthrough
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+jobs:
+  start_walkthrough:
+    name: Start walkthrough
+    if: ${{ !github.event.repository.is_template }}
+    uses: impacta-ghcp-eng-moderna/exercise-toolkit/.github/workflows/start-exercise.yml@main
+    with:
+      exercise-title: "Módulo 1 — Do requisito à aplicação"
+      issue-title-prefix: "Walkthrough: "
+      intro-message: "Neste walkthrough, você construirá uma aplicação .NET 10 de ponta a ponta com o GitHub Copilot, transformando intenção em incrementos verificáveis e revisando as evidências antes de avançar."
+
+  post_first_step:
+    name: Post first step
+    needs: [start_walkthrough]
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Post Codespace instructions
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          issue-number: ${{ needs.start_walkthrough.outputs.issue-number }}
+          file: .github/steps/01-open-codespace.md
+          vars: |
+            repository: ${{ github.repository }}
