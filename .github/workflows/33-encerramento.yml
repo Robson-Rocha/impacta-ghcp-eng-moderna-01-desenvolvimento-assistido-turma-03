@@ -1,0 +1,41 @@
+name: Passo 36 - Encerramento
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: validado
+
+jobs:
+  finish_walkthrough:
+    if: >-
+      ${{ !github.event.repository.is_template
+      && !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Walkthrough: ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Finish walkthrough
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/progress-step.sh \
+            "${{ github.repository }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.comment.body }}" \
+            "${{ env.STEP_TRIGGER_PHRASE }}" \
+            "${{ github.workflow }}" \
+            "" \
+            "" \
+            "A revisão final reuniu teste, OpenAPI e integração contínua. Com as evidências organizadas, podemos encerrar o walkthrough." \
+            "Para encerrar o walkthrough, comente \`${{ env.STEP_TRIGGER_PHRASE }}\` nesta issue." \
+            "final" \
+            "$(cat .github/steps/33-encerramento.md)"

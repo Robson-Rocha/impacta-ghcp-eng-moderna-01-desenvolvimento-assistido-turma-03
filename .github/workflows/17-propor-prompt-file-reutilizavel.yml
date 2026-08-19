@@ -1,0 +1,41 @@
+name: Passo 17 - propor prompt file reutilizavel
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: feito
+
+jobs:
+  progress_walkthrough:
+    if: >-
+      ${{ !github.event.repository.is_template
+      && !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Walkthrough: ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Progress walkthrough
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/progress-step.sh \
+            "${{ github.repository }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.comment.body }}" \
+            "${{ env.STEP_TRIGGER_PHRASE }}" \
+            "${{ github.workflow }}" \
+            "18-criar-create-training-endpoint-prompt.yml" \
+            ".github/steps/17-propor-prompt-file-reutilizavel.md" \
+            "A regra foi incorporada com especificação, teste e código alinhados. Agora vamos generalizar o método usado nesse primeiro endpoint." \
+            "Para avançar o walkthrough, comente \`${{ env.STEP_TRIGGER_PHRASE }}\` nesta issue." \
+            "next"
+
