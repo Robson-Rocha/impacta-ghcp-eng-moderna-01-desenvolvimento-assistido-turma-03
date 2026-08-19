@@ -1,0 +1,40 @@
+name: Criar CI
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: planejado
+
+jobs:
+  post_step_25:
+    if: >-
+      ${{ !github.event.repository.is_template
+      && !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Walkthrough: ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Progress walkthrough
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/progress-step.sh \
+            "${{ github.repository }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.comment.body }}" \
+            "${{ env.STEP_TRIGGER_PHRASE }}" \
+            "${{ github.workflow }}" \
+            "26-validar-pr-e-workflow.yml" \
+            ".github/steps/25-criar-ci.md" \
+            "Plano pronto. Agora vamos criar o workflow de CI." \
+            "Para avançar o walkthrough, comente \`${{ env.STEP_TRIGGER_PHRASE }}\` nesta issue." \
+            "next"

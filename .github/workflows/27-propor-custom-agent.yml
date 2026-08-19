@@ -1,0 +1,40 @@
+name: Propor custom agent
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: validado
+
+jobs:
+  post_step_27:
+    if: >-
+      ${{ !github.event.repository.is_template
+      && !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Walkthrough: ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Progress walkthrough
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/progress-step.sh \
+            "${{ github.repository }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.comment.body }}" \
+            "${{ env.STEP_TRIGGER_PHRASE }}" \
+            "${{ github.workflow }}" \
+            "28-criar-custom-agent.yml" \
+            ".github/steps/27-propor-custom-agent.md" \
+            "Perfeito. Agora vamos propor o perfil mínimo do custom agent." \
+            "Para avançar o walkthrough, comente \`${{ env.STEP_TRIGGER_PHRASE }}\` nesta issue." \
+            "next"

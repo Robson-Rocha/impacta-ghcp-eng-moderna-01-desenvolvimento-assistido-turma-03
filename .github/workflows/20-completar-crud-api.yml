@@ -1,0 +1,40 @@
+name: Completar CRUD API
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: concluido
+
+jobs:
+  post_step_20:
+    if: >-
+      ${{ !github.event.repository.is_template
+      && !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Walkthrough: ') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Progress walkthrough
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/progress-step.sh \
+            "${{ github.repository }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.comment.body }}" \
+            "${{ env.STEP_TRIGGER_PHRASE }}" \
+            "${{ github.workflow }}" \
+            "21-adicionar-persistencia.yml" \
+            ".github/steps/20-completar-crud-api.md" \
+            "Persistência concluída. Agora vamos completar os demais endpoints da API." \
+            "Para avançar o walkthrough, comente \`${{ env.STEP_TRIGGER_PHRASE }}\` nesta issue." \
+            "next"

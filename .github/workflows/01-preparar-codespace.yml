@@ -1,0 +1,109 @@
+name: Preparar Codespace
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+env:
+  STEP_TRIGGER_PHRASE: preparado
+
+jobs:
+  start_walkthrough:
+    name: Start walkthrough
+    if: ${{ !github.event.repository.is_template }}
+    uses: impacta-ghcp-eng-moderna/exercise-toolkit/.github/workflows/start-exercise.yml@main
+    with:
+      exercise-title: "Módulo 1 — Do requisito à aplicação"
+      issue-title-prefix: "Walkthrough: "
+      intro-message: "Neste walkthrough, você construirá uma aplicação .NET 10 de ponta a ponta com o GitHub Copilot, transformando intenção em incrementos verificáveis e revisando as evidências antes de avançar."
+
+  validate-checkpoints:
+    name: Validate checkpoint branches
+    needs: [start_walkthrough]
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    outputs:
+      checkpoints-available: ${{ steps.check.outputs.checkpoints_available }}
+    steps:
+      - name: Check required checkpoint branches
+        id: check
+        uses: actions/github-script@v9
+        env:
+          REQUIRED_BRANCHES: checkpoint/00-inicio,checkpoint/01-especificar-fatia,checkpoint/02-criar-base-solucao,checkpoint/04-completar-api,checkpoint/05-adicionar-persistencia,checkpoint/06-conectar-interface,checkpoint/07-adicionar-evidencias
+        with:
+          script: |
+            const required = process.env.REQUIRED_BRANCHES.split(',').map(item => item.trim()).filter(Boolean);
+            const missing = [];
+
+            for (const branch of required) {
+              try {
+                await github.rest.repos.getBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  branch
+                });
+              } catch (error) {
+                missing.push(branch);
+              }
+            }
+
+            core.setOutput('checkpoints_available', missing.length === 0 ? 'true' : 'false');
+            if (missing.length > 0) {
+              core.setOutput('missing_branches', missing.join(', '));
+              core.warning(`Missing checkpoint branches: ${missing.join(', ')}`);
+            }
+  post-missing-branches-blocker:
+    name: Post blocker when branches are missing
+    needs: [start_walkthrough, validate-checkpoints]
+    if: ${{ !github.event.repository.is_template && needs.validate-checkpoints.outputs.checkpoints-available != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post blocker comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ needs.start_walkthrough.outputs.issue-number }}
+          ISSUE_REPOSITORY: ${{ github.repository }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$ISSUE_REPOSITORY" --body "
+          > [!WARNING]
+          > Este walkthrough foi bloqueado porque as branches de checkpoint não foram copiadas junto com o template.
+          >
+          > Exclua este repositório e crie uma nova cópia do template marcando **Include all branches**.
+          >
+          > Enquanto essas branches não existirem, o walkthrough não poderá continuar.
+          "
+
+  post_first_step:
+    name: Post first step
+    needs: [start_walkthrough, validate-checkpoints]
+    if: ${{ !github.event.repository.is_template && needs.validate-checkpoints.outputs.checkpoints-available == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Post first step
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          issue-number: ${{ needs.start_walkthrough.outputs.issue-number }}
+          file: .github/steps/01-preparar-codespace.md
+          vars: |
+            repository: ${{ github.repository }}
+
+      - name: Create comment - watching for progress
+        uses: GrantBirki/comment@v2.1.1
+        with:
+          issue-number: ${{ needs.start_walkthrough.outputs.issue-number }}
+          body: "Por favor, siga as etapas acima.  \nEstarei observando seu progresso para fornecer comentários. 🧐"
+
+      - name: Enable next step workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow enable "02-explorar-ambiguidades.yml"
+
