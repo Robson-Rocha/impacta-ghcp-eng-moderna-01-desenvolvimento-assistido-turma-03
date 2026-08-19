@@ -8,6 +8,32 @@ e integração contínua.
 O objetivo não é produzir código idêntico ao do instrutor. O trabalho será comparado por
 critérios, contratos, comportamento e evidências.
 
+## Base da solucao
+
+A solution `TrainingCatalog.slnx` organiza a aplicacao em projetos independentes:
+
+- `TrainingCatalog.Domain`: nucleo sem dependencias de infraestrutura.
+- `TrainingCatalog.Application`: contratos de aplicacao.
+- `TrainingCatalog.Infrastructure`: ponto de extensao para infraestrutura futura.
+- `TrainingCatalog.Api`: host ASP.NET Core, sem endpoints nesta etapa.
+- `TrainingCatalog.Client`: interface Blazor WebAssembly, independente da API.
+- `TrainingCatalog.Api.Tests`: projeto de testes da API.
+
+SQLite, EF Core, persistencia, endpoints e componentes de negocio serao adicionados no
+incremento que os implementar. A especificacao em
+`docs/specs/training-catalog-vertical-slice.md` permanece a fonte de verdade para esse
+trabalho.
+
+### Validacao
+
+Execute os comandos abaixo na raiz do repositorio:
+
+```bash
+dotnet restore TrainingCatalog.slnx
+dotnet build TrainingCatalog.slnx --no-restore
+dotnet test TrainingCatalog.slnx --no-build --no-restore
+```
+
 ## Como iniciar
 
 1. Use o botão abaixo para criar seu próprio repositório.
